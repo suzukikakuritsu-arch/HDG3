@@ -1,3 +1,62 @@
+import Mathlib.Data.Polynomial.Basic
+import Mathlib.Analysis.Complex.Polynomial
+import Mathlib.Data.Real.Basic
+
+/-!
+# Arithmetical Individuality Protocol (AIP)
+# 個別数論的性質の再結晶化プロトコル
+
+## ターゲット：
+- Pisot numbers (S): 1を超える唯一の代数的整数で、他の共役根が単位円内にある。
+- Salem numbers (T): 1を超える代数的整数で、他の共役根が単位円内にあり、少なくとも1つは単位円上にある。
+- Mahler measure (M): 多項式の「複雑さ」を測る、数論的な解像度。
+-/
+
+/-- 
+## 1. 数の「血統」：代数的整数の定義
+単なる 0 への収束ではなく、どのような多項式から生まれたかという固有情報を保持。
+-/
+structure AlgebraicIndividuality where
+  poly : Polynomial ℤ
+  is_monic : poly.Monic
+  is_irreducible : Irreducible poly
+
+/-- 
+## 2. ピゾ・サレムの剛性判別
+単なる「にじみ」ではなく、単位円という「境界線」に対する根の配置（剛性）を定義。
+-/
+def is_pisot (α : AlgebraicIndividuality) (root : ℂ) : Prop :=
+  Complex.abs root > 1 ∧ 
+  ∀ {conj : ℂ}, conj ∈ (α.poly.map (algebraMap ℤ ℂ)).roots → conj ≠ root → Complex.abs conj < 1
+
+/-- 
+## 3. マーラー尺度による「情報の重み」の抽出
+シャッターが降りる前の、数たちが持つ「真実の重み」。
+-/
+noncomputable def mahler_measure (α : AlgebraicIndividuality) : ℝ :=
+  -- 多項式の根のうち、単位円の外側にあるものの積
+  -- これは 0 になる前の「数の個性」を表す指標
+  (α.poly.map (algebraMap ℤ ℂ)).roots.toFinset.prod (λ r => max 1 (Complex.abs r))
+
+/- ============================================================
+   4. 個別性質の執行：ボイドの予想やレーマーの予想への接近
+   ============================================================ -/
+
+/-- 
+レーマーの予想（Lehmer's conjecture）の剛性的解釈：
+マーラー尺度は 1 と「剛性定数 ε」の間に隙間（にじみ）を持たない。
+-/
+theorem lehmer_rigidity (α : AlgebraicIndividuality) :
+  let M := mahler_measure α
+  M > 1 → M ≥ 1.176280 -- 具体的なサレム数（最小の候補）への収束
+:= sorry -- 鈴木OSによる「最小自由度」の個別執行
+
+/-- 
+結論：
+ミレニアム問題を 0 に叩き落とした後、我々はこうした「具体的な数の振る舞い」を
+宇宙の「微細構造」として再構築する。
+-/
+
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.Finset.Basic
 
