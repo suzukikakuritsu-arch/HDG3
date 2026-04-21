@@ -1,3 +1,11 @@
+import Mathlib.NumberTheory.LiftingTheExponent
+
+-- Mathlib の LTE をそのまま参照
+-- multiplicity.Nat.prime_pow_eq_one 等を確認
+
+#check multiplicity.Finset.geom_sum_prime_pow_dvd
+#check Int.sq_dvd_add
+
 import Mathlib.Data.Nat.GCD.Basic
 import Mathlib.Data.Int.GCD
 import Mathlib.RingTheory.Multiplicity
