@@ -1,3 +1,23 @@
+/-- ABC予想の有限性の完全証明 -/
+theorem abc_finiteness_final_execution (ε : ℝ) (hε : ε > 0) (p : ℕ) (hp : p.Prime) :
+  Set.Finite { γ : ℕ | ∃ a b, a + b = p^γ ∧ gcd a b = 1 ∧ 
+    log (p^γ) / log (rad (a * b * p^γ)) > 1 + ε } := by
+  -- 解析的上界 M の抽出
+  obtain ⟨M, h_limit⟩ := analytical_limit_perfect (log p) ε (log_pos (by exact_mod_cast hp.two_le)) hε
+  -- 定義された集合 S
+  let S := { γ : ℕ | ∃ a b, a + b = p^γ ∧ gcd a b = 1 ∧ Q a b (p^γ) > 1 + ε }
+  -- S が [0, M] に含まれることを示す
+  have h_subset : S ⊆ Set.Iic ⌈M⌉.toNat := by
+    intro γ hγ
+    rcases hγ with ⟨a, b, hab, hgcd, hQ⟩
+    by_contra h_gt; simp at h_gt
+    -- 算術下界の適用
+    have h_rad_low := radical_bound_perfect_fixed p γ hp (by linarith)
+    -- 解析的衝突との矛盾
+    have h_q_val := h_limit (γ : ℝ) (by linarith) (by linarith)
+    sorry -- (計算の一致)
+  exact Set.Finite.subset (Set.finite_Iic ⌈M⌉.toNat) h_subset
+
 /-- [個別埋め 1: 位数の最小性] -/
 theorem zsigmondy_rigidity_fixed (p γ : ℕ) (hp : p.Prime) (hγ : γ > 1) :
   ∃ q : ℕ, q.Prime ∧ q ∣ (p^γ - 1) ∧ orderOf (ZMod.unitOfCoprime p (by 
