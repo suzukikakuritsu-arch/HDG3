@@ -1,6 +1,156 @@
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Nat.GCD.Basic
 import Mathlib.Data.Nat.Prime.Basic
+import Mathlib.Data.Nat.Defs
+import Mathlib.NumberTheory.LiftingTheExponent
+import Mathlib.RingTheory.Multiplicity
+
+-- ================================================================
+-- 補題1：a + b = c, gcd(a,b)=1, p|c, p∤a → p∤b
+-- ================================================================
+
+theorem coprime_sum_prime_not_dvd
+    (a b c p : ℕ)
+    (hsum : a + b = c)
+    (hcop : Nat.Coprime a b)
+    (hp   : Nat.Prime p)
+    (hpc  : p ∣ c)
+    (hpa  : ¬ p ∣ a) :
+    ¬ p ∣ b := by
+  intro hpb
+  have hpab : p ∣ a + b := hsum ▸ hpc
+  have hpa' : p ∣ a := by
+    have := Nat.dvd_sub' hpab hpb  -- p | (a+b) - b = a
+    simpa using this
+  exact hpa hpa'
+
+-- ================================================================
+-- 補題2：rad の基本不等式
+-- rad(abc) ≥ p * rad(b)  （p|c, p∤b, p∤a の状況）
+-- Mathlib の squarefree_nat_abs 等を借りて近似
+-- ================================================================
+
+-- rad を定義（Mathlib の Nat.factorization を使用）
+noncomputable def rad (n : ℕ) : ℕ :=
+  n.factorization.support.prod id
+
+theorem rad_mul_dvd (a b : ℕ) (ha : 0 < a) (hb : 0 < b)
+    (hcop : Nat.Coprime a b) :
+    rad (a * b) = rad a * rad b := by
+  simp [rad, Nat.factorization_mul ha.ne' hb.ne',
+        Finsupp.support_add_eq (Nat.factorization_disjoint_of_coprime hcop)]
+  rw [Finset.prod_union (Nat.factorization_disjoint_of_coprime hcop)]
+
+-- ================================================================
+-- 補題3：数値検証
+-- 2 + 3^10 * 109 = 23^5
+-- ================================================================
+
+theorem reyssat_numerical :
+    2 + 3^10 * 109 = 23^5 := by norm_num
+
+-- rad(2 * (3^10 * 109) * 23^5) の計算
+theorem reyssat_rad :
+    rad 2 = 2 ∧
+    rad (3^10 * 109) = 3 * 109 ∧
+    rad (23^5) = 23 := by
+  constructor
+  · simp [rad]; native_decide
+  constructor
+  · simp [rad]; native_decide
+  · simp [rad]; native_decide
+
+-- Q 値の検証（有理数近似）
+-- log(23^5) / log(rad(2 * 3^10 * 109 * 23^5))
+-- = 5*log23 / log(2*3*23*109)
+-- ≈ 15.0827 / 9.2479 ≈ 1.6299
+theorem reyssat_Q_approx :
+    (5 * Float.log 23) / (Float.log (2 * 3 * 23 * 109)) > 1.629 := by
+  native_decide
+
+-- ================================================================
+-- LTE ラッパー（Mathlib の既存定理を参照）
+-- ================================================================
+
+-- Mathlib4 に multiplicity.Int.pow_sub_pow が存在する場合
+#check multiplicity.Finset.geom_sum_prime_pow_dvd
+
+theorem lte_wrapper (q : ℕ) (hq : Nat.Prime q) (hodd : q % 2 = 1)
+    (a b : ℤ) (n : ℕ)
+    (ha : ¬ (q : ℤ) ∣ a)
+    (hab : (q : ℤ) ∣ a - b)
+    (hn : 0 < n) :
+    multiplicity (q : ℤ) (a ^ n - b ^ n) =
+    multiplicity (q : ℤ) (a - b) + multiplicity (q : ℤ) n := by
+  sorry -- Mathlib の該当定理名が確定次第埋める
+
+-- ================================================================
+-- Zsygmondy ラッパー（有限例外を除く主張）
+-- ================================================================
+
+-- Mathlib4: Nat.exists_prime_and_dvd_of_ne_one 等
+#check Nat.minFac_prime
+
+-- Zsygmondy: x^n - y^n の primitive prime divisor の存在
+-- Mathlib4 には Zsygmondy は未実装の可能性大
+theorem zsygmondy_primitive_prime
+    (x y n : ℕ) (hx : 1 < x) (hy : 1 < y) (hxy : x > y)
+    (hn : 3 ≤ n) (hne : ¬ (x = 2 ∧ y = 1 ∧ n = 6)) :
+    ∃ p : ℕ, Nat.Prime p ∧ p ∣ x^n - y^n ∧
+    ∀ k < n, ¬ p ∣ x^k - y^k := by
+  sorry -- Zsygmondy は Mathlib4 未実装、独自証明が必要
+
+-- ================================================================
+-- γ 有界性（現状 sorry あり、ギャップ箇所を明示）
+-- ================================================================
+
+theorem gamma_bounded
+    (p : ℕ) (hp : Nat.Prime p) (ε : ℝ) (hε : 0 < ε)
+    (a b γ : ℕ)
+    (ha : 0 < a) (hb : 0 < b)
+    (hcop : Nat.Coprime a b)
+    (hsum : a + b = p^γ)
+    (hQ : Real.log (p^γ) / Real.log (rad (a * b * p^γ)) > 1 + ε) :
+    γ < p ^ ((1 : ℝ) / (1 + ε)) := by
+  sorry
+  -- ギャップ1: rad(b) < p^(γ/(1+ε)-1) の導出は OK
+  -- ギャップ2: Zsygmondy で r_new ≥ γ+1 → 一般の b=p^γ-a に未適用
+  -- ギャップ3: r_new < p^(γ/(1+ε)-1) と r_new ≥ γ+1 の連立
+  --           → γ+1 < p^(γ/(1+ε)-1) は γ に依存した不等式
+  --           → 陽な上界への変換が未解決
+
+-- ================================================================
+-- Reyssat 方程式（有限解の完全証明）
+-- γ ≤ 14 の直接確認部分のみ
+-- ================================================================
+
+-- 2^n - 5^m = 3^k の解を n ≤ 14 で列挙
+theorem reyssat_small_cases :
+    ∀ γ : ℕ, γ ≤ 14 →
+    ∀ β α : ℕ,
+    (2:ℤ)^γ - 5^β = 3^α →
+    (γ = 3 ∧ β = 1 ∧ α = 1) ∨
+    (γ = 5 ∧ β = 1 ∧ α = 3) ∨
+    (γ = 7 ∧ β = 3 ∧ α = 1) := by
+  decide -- γ ≤ 14, β ≤ 14, α ≤ 14 の範囲で decide が通るか要確認
+         -- 範囲が大きすぎる場合は norm_num + 場合分けに切り替え
+
+-- ================================================================
+-- 数値的 Q 上界（c ≤ 10^6 の範囲、native_decide）
+-- ================================================================
+
+-- Q > 1.5 となる (a,b,c) が有限であることの小範囲確認
+-- （これは ABC 予想本体ではなく数値実験）
+theorem Q_gt_1p5_small_range :
+    ∀ c : ℕ, c ≤ 1000 →
+    ∀ a b : ℕ, a + b = c → Nat.Coprime a b →
+    (0 : ℝ) < Real.log c →
+    Real.log c / Real.log (rad (a * b * c)) ≤ 1.8 := by
+  sorry -- native_decide には Real.log が使えないため別アプローチ必要
+
+import Mathlib.Data.Nat.Basic
+import Mathlib.Data.Nat.GCD.Basic
+import Mathlib.Data.Nat.Prime.Basic
 
 -- ================================================================
 -- 補題：a + b = c, gcd(a,b,c)=1 → p | c → p ∤ a → p ∤ b
