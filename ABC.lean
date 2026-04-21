@@ -1,3 +1,28 @@
+import Mathlib.Data.Nat.Basic
+import Mathlib.Data.Nat.GCD.Basic
+import Mathlib.Data.Nat.Prime.Basic
+
+-- ================================================================
+-- 補題：a + b = c, gcd(a,b,c)=1 → p | c → p ∤ a → p ∤ b
+-- ================================================================
+
+theorem coprime_sum_prime_dvd_c
+    (a b c p : ℕ)
+    (hsum : a + b = c)
+    (hcop : Nat.Coprime a b)
+    (hp : Nat.Prime p)
+    (hpc : p ∣ c)
+    (hpa : ¬ p ∣ a) :
+    ¬ p ∣ b := by
+  intro hpb
+  have hpab : p ∣ a + b := by
+    exact Dvd.dvd.add (dvd_of_not_dvd_of_dvd_sum hpb hpab) hpb
+  -- p | a+b = c かつ p | b → p | a、矛盾
+  have hpa' : p ∣ a := by
+    have : p ∣ a + b := hsum ▸ hpc
+    exact (Nat.dvd_add_right hpb).mp this
+  exact hpa hpa'
+
 import Mathlib.NumberTheory.LiftingTheExponent
 
 -- Mathlib の LTE をそのまま参照
