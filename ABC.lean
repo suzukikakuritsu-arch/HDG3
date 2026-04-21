@@ -1,6 +1,91 @@
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Nat.GCD.Basic
 import Mathlib.Data.Nat.Prime.Basic
+
+-- ================================================================
+-- rad の computable 定義
+-- ================================================================
+
+def rad (n : ℕ) : ℕ :=
+  ((Finset.range n).filter (fun p => Nat.Prime p && (p ∣ n))).prod id
+
+-- ================================================================
+-- 数値検証（native_decide）
+-- ================================================================
+
+theorem rad_2_eq : rad 2 = 2 := by native_decide
+
+theorem rad_23_pow_5_eq : rad (23^5) = 23 := by native_decide
+
+theorem rad_3_pow_10_mul_109_eq : rad (3^10 * 109) = 327 := by native_decide
+
+-- 327 = 3 * 109 の確認
+theorem factored : 3 * 109 = 327 := by norm_num
+
+-- ================================================================
+-- Reyssat 数値トリプル検証
+-- ================================================================
+
+-- 2 + 3^10 * 109 = 23^5
+theorem reyssat_numerical : 2 + 3^10 * 109 = 23^5 := by norm_num
+
+-- rad(abc) = rad(2) * rad(3^10 * 109) * rad(23^5) = 2 * 327 * 23
+theorem reyssat_rad_product :
+    rad 2 * rad (3^10 * 109) * rad (23^5) = 2 * 327 * 23 := by
+  native_decide
+
+-- 2 * 327 * 23 = 15042
+theorem reyssat_rad_val : 2 * 327 * 23 = 15042 := by norm_num
+def rad (n : ℕ) : ℕ :=
+  ((Finset.range n).filter (fun p => decide (Nat.Prime p) && decide (p ∣ n))).prod id
+import Mathlib.Data.Nat.Basic
+import Mathlib.Data.Nat.GCD.Basic
+import Mathlib.Data.Nat.Prime.Basic
+import Mathlib.Data.Int.Basic
+
+-- ================================================================
+-- reyssat_small_cases
+-- 2^γ - 5^β = 3^α の解を γ ≤ 14 で列挙
+-- 解は (γ,β,α) = (3,1,1), (5,1,3), (7,3,1) のみ
+-- ================================================================
+
+-- まず Int で述語を定義
+def is_reyssat (γ β α : ℕ) : Prop :=
+  (2:ℤ)^γ - 5^β = 3^α
+
+instance (γ β α : ℕ) : Decidable (is_reyssat γ β α) := by
+  unfold is_reyssat
+  infer_instance
+
+-- γ ≤ 14, β ≤ 14, α ≤ 14 の範囲で解を列挙
+theorem reyssat_small_cases :
+    ∀ γ β α : ℕ,
+    γ ≤ 14 → β ≤ 14 → α ≤ 14 →
+    is_reyssat γ β α →
+    (γ = 3 ∧ β = 1 ∧ α = 1) ∨
+    (γ = 5 ∧ β = 1 ∧ α = 3) ∨
+    (γ = 7 ∧ β = 3 ∧ α = 1) := by
+  decide
+-- native_decide に切り替え
+theorem reyssat_small_cases : ... := by native_decide
+
+-- それでも重い場合、γ で場合分け
+theorem reyssat_small_cases :
+    ∀ γ β α : ℕ,
+    γ ≤ 14 → β ≤ 14 → α ≤ 14 →
+    is_reyssat γ β α →
+    (γ = 3 ∧ β = 1 ∧ α = 1) ∨
+    (γ = 5 ∧ β = 1 ∧ α = 3) ∨
+    (γ = 7 ∧ β = 3 ∧ α = 1) := by
+  intro γ hγ
+  interval_cases γ <;> intro β hβ <;> interval_cases β <;>
+  intro α hα <;> interval_cases α <;>
+  simp [is_reyssat] <;> norm_num
+
+
+import Mathlib.Data.Nat.Basic
+import Mathlib.Data.Nat.GCD.Basic
+import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.NumberTheory.Primorial
 
 -- ================================================================
