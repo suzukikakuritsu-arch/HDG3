@@ -6,6 +6,42 @@ open Real Filter
 
 /--
   [個別証明 1: 解析的衝突]
+  任意の c > 0 (log pに相当) と ε > 0 に対して、
+  Q(γ) = (γ * c) / (log γ + c) が 1 + ε を超えない上限 γ_max が存在することを示す。
+-/
+theorem analytical_gamma_bound (c ε : ℝ) (hc : 0 < c) (hε : ε > 0) :
+  ∃ γ_max : ℝ, ∀ γ > γ_max, γ > 1 →
+    (γ * c) / (log γ + c) ≤ 1 + ε := by
+  -- 不等式を変形: γ * c ≤ (1 + ε) * (log γ + c)
+  -- ⇔ γ * (c / (1 + ε)) - c ≤ log γ
+  let k := c / (1 + ε)
+  -- k < c なので、左辺は O(γ)、右辺は O(log γ)
+  have h_k_pos : 0 < k := div_pos hc (add_pos one_pos hε)
+  
+  -- 線形が対数を圧倒する Mathlib の標準極限を適用
+  have h_lim : Tendsto (fun x => x * k - log x) atTop atTop := by
+    apply tendsto_atTop_add_atBot_left
+    · exact tendsto_id.const_mul_atTop h_k_pos
+    · exact tendsto_log_atTop.neg_atTop
+  
+  -- 発散するため、ある点 M 以降で値が c を超える
+  obtain ⟨M, hM⟩ := (tendsto_atTop.mp h_lim) c
+  use M
+  intro γ hγ _
+  have h_ineq := hM γ hγ
+  -- (γ * k - log γ > c) ⇔ (γ * c / (1 + ε) - c > log γ)
+  -- これを整理すると Q ≤ 1 + ε が導かれる
+  rw [le_div_iff (add_pos (log_pos (by linarith)) hc)] -- log γ + c > 0
+  linarith
+
+import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import Mathlib.Analysis.SpecialFunctions.Log.Deriv
+import Mathlib.Topology.Algebra.Order
+
+open Real Filter
+
+/--
+  [個別証明 1: 解析的衝突]
   任意の c > 0 (log p に相当) と ε > 0 に対して、
   γ * c / (log γ + c) ≤ 1 + ε 
   を満たさない γ は有限（ある γ_max 以下）であることを示す。
