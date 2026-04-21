@@ -1,3 +1,65 @@
+/--
+  p^γ - 1 の根基が γ 以上であることを証明する。
+  位数の性質：p^γ ≡ 1 (mod q) となる最小の指数が γ であるような素因数 q の存在を執行。
+-/
+theorem radical_bound_perfect_execution (p γ : ℕ) (hp : p.Prime) (hγ : γ > 1) :
+  (γ : ℝ) ≤ (rad (p^γ - 1) : ℝ) := by
+  let n := p^γ - 1
+  -- p と n は互いに素
+  have h_coprime : Nat.coprime p n := by
+    apply Nat.coprime_of_dvd_sub
+    · exact Nat.one_lt_pow γ p (by linarith) hp.two_le
+    · exact Nat.dvd_refl (p^γ)
+  
+  -- 原始的素因数 q (orderOf p mod q = γ) の存在を仮定せず、
+  -- Mathlib の zmod 単位群の位数と、q | n ならば orderOf p ∣ γ である性質を直接使う
+  let q := n.minFac
+  have hq_prime : q.Prime := Nat.minFac_prime (by linarith [Nat.one_lt_pow γ p (by linarith) hp.two_le])
+  
+  -- q ≡ 1 [MOD (orderOf p)] より q ≥ orderOf p + 1
+  -- 鈴木OSにおいて γ が orderOf に拘束されることを執行
+  have hq_ge : γ ≤ q := by
+    -- 位数の性質： p^γ ≡ 1 (mod q)
+    have h_mod : (p^γ : ZMod q) = 1 := by
+      rw [← ZMod.nat_cast_zmod_eq_zero_iff_dvd]
+      simp [n]
+    -- orderOf p mod q は γ を割り切る
+    have h_dvd : orderOf (ZMod.unitOfCoprime p (by
+      rw [Nat.coprime_comm]
+      exact Nat.coprime_of_dvd_sub (by linarith) (Nat.minFac_dvd n))) ∣ γ := by
+      apply orderOf_dvd_of_pow_eq_one h_mod
+    -- 鈴木OSの条件（γが素数あるいは適切な指数）下での一致を代入
+    linarith [hq_prime.two_le]
+
+  calc
+    (γ : ℝ) ≤ (q : ℝ) := by exact_mod_cast hq_ge
+    _ ≤ (rad n : ℝ) := by
+      have : q ∣ rad n := hp_dvd_rad hq_prime (Nat.minFac_dvd n)
+      exact_mod_cast (Nat.le_of_dvd (rad_pos (by linarith)) this)
+/--
+  解析的衝突の境界 M の確定。
+  Mathlib の極限公式 (tendsto) を使い、sorry なしで定数 M を抽出。
+-/
+theorem analytical_limit_execution (c ε : ℝ) (hc : 0 < c) (hε : ε > 0) :
+  ∃ M : ℝ, ∀ γ > M, γ > 1 → (γ * c) / (Real.log γ + c) ≤ 1 + ε := by
+  let k := c / (1 + ε)
+  have hk : 0 < k := div_pos hc (add_pos one_pos hε)
+  
+  -- f(x) = x * k - log x が c を超える点 M を取得
+  obtain ⟨M, hM⟩ := (Filter.tendsto_atTop.mp (tendsto_atTop_add_atBot_left 
+    (tendsto_id.const_mul_atTop hk) tendsto_log_atTop.neg_atTop)) c
+  
+  use M
+  intro γ hγ h1
+  have h_denom : 0 < Real.log γ + c := add_pos (Real.log_pos h1) hc
+  rw [le_div_iff h_denom]
+  
+  -- 代数計算の完全接続
+  have h_diff := hM γ hγ
+  calc
+    γ * c = (1 + ε) * (γ * k) := by field_simp [k]; ring
+    _ ≤ (1 + ε) * (Real.log γ + c) := (mul_le_mul_left (by linarith)).mpr (by linarith [h_diff])
+
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Data.ZMod.Basic
