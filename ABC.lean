@@ -1,6 +1,132 @@
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Nat.GCD.Basic
 import Mathlib.Data.Nat.Prime.Basic
+import Mathlib.Data.Int.Basic
+import Mathlib.Tactic.IntervalCases
+import Mathlib.RingTheory.Multiplicity
+import Mathlib.NumberTheory.LiftingTheExponent
+
+-- ================================================================
+-- rad の computable 定義
+-- ================================================================
+
+def rad (n : ℕ) : ℕ :=
+  ((Finset.range n).filter (fun p => Nat.Prime p && (p ∣ n))).prod id
+
+-- ================================================================
+-- 数値検証
+-- ================================================================
+
+theorem reyssat_numerical : 2 + 3^10 * 109 = 23^5 := by norm_num
+
+theorem rad_2_eq : rad 2 = 2 := by native_decide
+theorem rad_23_pow_5_eq : rad (23^5) = 23 := by native_decide
+theorem rad_3_pow_10_mul_109_eq : rad (3^10 * 109) = 327 := by native_decide
+
+theorem beta_bound : (5:ℤ)^15 > 2^14 := by norm_num
+theorem alpha_bound : (3:ℤ)^15 > 2^14 := by norm_num
+
+-- ================================================================
+-- 補題：a + b = c, p|c, p∤a → p∤b（整数版）
+-- ================================================================
+
+theorem coprime_sum_prime_not_dvd_int
+    (a b c p : ℤ)
+    (hsum : a + b = c)
+    (hp   : Prime p)
+    (hpc  : p ∣ c)
+    (hpa  : ¬ p ∣ a) :
+    ¬ p ∣ b := by
+  intro hpb
+  have hpab : p ∣ a + b := hsum ▸ hpc
+  have hpa' : p ∣ a := by
+    have := dvd_add_right hpb
+    exact this.mp hpab
+  exact hpa hpa'
+
+-- ================================================================
+-- Reyssat 小ケース（interval_cases 版）
+-- 2^γ - 5^β = 3^α, γ ≤ 14
+-- ================================================================
+
+def is_reyssat (γ β α : ℕ) : Prop :=
+  (2:ℤ)^γ - 5^β = 3^α
+
+instance (γ β α : ℕ) : Decidable (is_reyssat γ β α) := by
+  unfold is_reyssat
+  infer_instance
+
+theorem reyssat_small_cases :
+    ∀ γ β α : ℕ,
+    γ ≤ 14 → β ≤ 14 → α ≤ 14 →
+    is_reyssat γ β α →
+    (γ = 3 ∧ β = 1 ∧ α = 1) ∨
+    (γ = 5 ∧ β = 1 ∧ α = 3) ∨
+    (γ = 7 ∧ β = 3 ∧ α = 1) := by
+  intro γ hγ β hβ α hα h
+  interval_cases γ <;>
+  interval_cases β <;>
+  interval_cases α <;>
+  simp_all [is_reyssat] <;>
+  norm_num
+
+-- ================================================================
+-- LTE ラッパー
+-- ================================================================
+
+-- Mathlib4 の LTE 定理を確認
+#check multiplicity.Int.pow_sub_pow
+#check multiplicity.Nat.prime_pow_eq_one
+
+-- 奇素数 q, q|a-b, q∤a → v_q(a^n - b^n) = v_q(a-b) + v_q(n)
+theorem lte_wrapper
+    (q : ℕ) (hq : Nat.Prime q) (hq_odd : q ≠ 2)
+    (a b : ℤ) (n : ℕ)
+    (ha  : ¬ (q : ℤ) ∣ a)
+    (hab : (q : ℤ) ∣ a - b)
+    (hn  : 0 < n) :
+    multiplicity (q : ℤ) (a ^ n - b ^ n) =
+    multiplicity (q : ℤ) (a - b) + multiplicity (q : ℤ) n := by
+  have hq_prime : Prime (q : ℤ) := by
+    exact_mod_cast hq.prime
+  have hq2 : (q : ℤ) ≠ 2 := by
+    exact_mod_cast hq_odd
+  exact multiplicity.Int.pow_sub_pow hq_prime hq2 ha hab hn
+
+-- ================================================================
+-- LTE 応用：v_3(23^γ - 2) の計算
+-- 23 ≡ 2 (mod 3), 3 | 23-2=21 → LTE 適用可
+-- ================================================================
+
+-- 3 | 23 - 2
+theorem three_dvd_23_sub_2 : (3:ℤ) ∣ 23 - 2 := by norm_num
+
+-- 3 ∤ 23
+theorem three_not_dvd_23 : ¬ (3:ℤ) ∣ 23 := by norm_num
+
+-- v_3(23^γ - 2^γ) = v_3(23-2) + v_3(γ) = 1 + v_3(γ)
+-- （2^γ との差ではなく 23^γ - 2^γ に LTE 適用）
+theorem lte_23_2 (γ : ℕ) (hγ : 0 < γ) :
+    multiplicity (3:ℤ) (23^γ - 2^γ) =
+    multiplicity (3:ℤ) (23 - 2) + multiplicity (3:ℤ) γ := by
+  apply lte_wrapper 3 (by norm_num) (by norm_num)
+  · exact three_not_dvd_23
+  · exact three_dvd_23_sub_2
+  · exact hγ
+
+-- ================================================================
+-- v_3(23-2) = v_3(21) = 1
+-- ================================================================
+
+theorem v3_21 : multiplicity (3:ℤ) 21 = 1 := by
+  rw [show (21:ℤ) = 3 * 7 by norm_num]
+  rw [multiplicity.mul (by norm_num : Prime (3:ℤ))]
+  simp [multiplicity.prime_self, multiplicity.eq_zero.mpr]
+  norm_num
+
+import Mathlib.Data.Nat.Basic
+import Mathlib.Data.Nat.GCD.Basic
+import Mathlib.Data.Nat.Prime.Basic
 
 -- ================================================================
 -- rad の computable 定義
@@ -81,6 +207,11 @@ theorem reyssat_small_cases :
   interval_cases γ <;> intro β hβ <;> interval_cases β <;>
   intro α hα <;> interval_cases α <;>
   simp [is_reyssat] <;> norm_num
+-- β ≤ 14 の正当化：5^15 > 2^14 なので β ≤ 14 で十分
+theorem beta_bound : (5:ℤ)^15 > 2^14 := by norm_num
+
+-- α ≤ 14 の正当化：3^15 > 2^14 なので α ≤ 14 で十分
+theorem alpha_bound : (3:ℤ)^15 > 2^14 := by norm_num
 
 
 import Mathlib.Data.Nat.Basic
