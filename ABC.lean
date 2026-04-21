@@ -1,6 +1,62 @@
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Nat.GCD.Basic
 import Mathlib.Data.Nat.Prime.Basic
+import Mathlib.NumberTheory.Primorial
+
+-- ================================================================
+-- rad の定義
+-- ================================================================
+
+noncomputable def rad (n : ℕ) : ℕ :=
+  n.factorization.support.prod id
+
+-- ================================================================
+-- rad の基本性質
+-- ================================================================
+
+theorem rad_prime (p : ℕ) (hp : Nat.Prime p) : rad p = p := by
+  simp [rad, Nat.factorization_prime hp]
+
+theorem rad_prime_pow (p : ℕ) (hp : Nat.Prime p) (k : ℕ) (hk : 0 < k) :
+    rad (p ^ k) = p := by
+  simp [rad, Nat.factorization_pow, Finsupp.support_smul_eq (Nat.pos_of_ne_zero (Nat.Prime.ne_zero hp)).ne']
+  simp [Nat.factorization_prime hp]
+
+-- ================================================================
+-- reyssat_rad
+-- 3^10 * 109 の rad = 3 * 109
+-- 23^5 の rad = 23
+-- ================================================================
+
+theorem rad_3_pow_10_mul_109 :
+    rad (3^10 * 109) = 3 * 109 := by
+  native_decide
+
+theorem rad_23_pow_5 :
+    rad (23^5) = 23 := by
+  native_decide
+
+theorem rad_2 :
+    rad 2 = 2 := by
+  native_decide
+-- computable 版 rad
+def rad (n : ℕ) : ℕ :=
+  n.factorization.support.prod id
+
+-- それでも Finsupp.support が computable か怪しい場合
+-- 完全に初等的な定義に切り替え
+
+def rad' (n : ℕ) : ℕ :=
+  (Finset.range n).filter (fun p => Nat.Prime p ∧ p ∣ n) |>.prod id
+
+theorem rad_23_pow_5 : rad' (23^5) = 23 := by native_decide
+theorem rad_3_pow_10_mul_109 : rad' (3^10 * 109) = 327 := by native_decide
+theorem rad_2 : rad' 2 = 2 := by native_decide
+
+
+import Mathlib.Data.Nat.Basic
+import Mathlib.Data.Nat.GCD.Basic
+import Mathlib.Data.Nat.Prime.Basic
 
 -- ================================================================
 -- 補題1：a + b = c, gcd(a,b)=1, p|c, p∤a → p∤b
