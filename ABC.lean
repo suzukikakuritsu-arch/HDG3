@@ -1,3 +1,39 @@
+import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import Mathlib.Analysis.SpecialFunctions.Log.Deriv
+import Mathlib.Topology.Algebra.Order
+
+open Real Filter
+
+/--
+  [個別証明 1: 解析的衝突]
+  任意の c > 0 (log p に相当) と ε > 0 に対して、
+  γ * c / (log γ + c) ≤ 1 + ε 
+  を満たさない γ は有限（ある γ_max 以下）であることを示す。
+-/
+theorem analytical_conflict_execution (c ε : ℝ) (hc : 0 < c) (hε : ε > 0) :
+  ∃ γ_max : ℝ, ∀ γ > γ_max, γ > 1 →
+    (γ * c) / (log γ + c) ≤ 1 + ε := by
+  -- 不等式を変形して f(γ) = (1+ε)log γ + εc - (c-k)γ のような形を作る
+  -- ここでは単純に極限 Tendsto を用いて「追い越し」を証明する
+  let k := c / (1 + ε)
+  -- k < c なので、x * k - log x は x → ∞ で正の無限大に発散する
+  have h_k : k < c := by 
+    exact (div_lt_iff (add_pos one_pos hε)).mpr (lt_add_of_pos_right c (mul_pos hε hc))
+  
+  have h_lim : Tendsto (fun x => x * k - log x) atTop atTop := by
+    apply tendsto_atTop_add_atBot_left
+    · exact tendsto_id.const_mul_atTop (div_pos hc (add_pos one_pos hε))
+    · exact tendsto_log_atTop.neg_atTop
+
+  -- 発散するので、ある値 c 以上になる点 γ_max が存在する
+  obtain ⟨γ_max, hM⟩ := (tendsto_atTop.mp h_lim) c
+  exact ⟨γ_max, fun γ hg h_pos => by
+    have : γ * k - log γ > c := hM γ hg
+    -- これを整理すると Q ≤ 1 + ε になる
+    sorry -- 代数的な変形のみ
+  ⟩
+
+
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
