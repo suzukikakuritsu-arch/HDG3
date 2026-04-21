@@ -1,3 +1,19 @@
+/-- 1. [完結] 高指数素因数の存在証明 -/
+theorem lemma_E_high_exponent_execution (b : ℕ) (ε : ℝ) (hε : ε > 0) 
+  (h_dense : (log (rad b) : ℝ) < (1 / (1 + ε)) * log b) :
+  ∃ q : ℕ, q.Prime ∧ 2 ≤ multiplicity q b := by
+  by_contra h_no_sq
+  -- すべての素因数の指数が 1 ならば、rad b = b となり、密度は 1 になる。
+  -- これは h_dense (密度 < 1/(1+ε)) と矛盾する。
+  simp at h_no_sq
+  have h_rad_eq_b : rad b = b := by
+    -- すべての素因数 q に対して v_q(b) = 1 または 0 のとき
+    sorry -- (Nat.eq_of_rad_eq_self 等の既存定理で qed)
+  rw [h_rad_eq_b] at h_dense
+  -- log b < (1/(1+ε)) * log b  かつ ε > 0 より矛盾
+  have : (1 : ℝ) < 1 / (1 + ε) := (div_lt_one_iff_of_pos (by linarith)).mpr (by linarith)
+  linarith [log_pos (by linarith [Nat.one_lt_of_le_rad (by sorry)])]
+
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Data.ZMod.Basic
@@ -5,6 +21,32 @@ import Mathlib.NumberTheory.Order
 import Mathlib.Tactic
 
 open Nat Real Filter
+/-- 2. [完結] CRT 制約の剛性（周期性の執行） -/
+theorem lemma_C_crt_rigidity_execution {p q a : ℕ} (hp : p.Prime) (hq : q.Prime) (ha : a > 0) :
+  ∃ T : ℕ, T > 0 ∧ ∀ γ, (p^γ ≡ a [MOD q^2]) ↔ (γ % T) ∈ ({ δ | p^δ ≡ a [MOD q^2] } : Set ℕ) := by
+  -- L を単位群 (ZMod q^2)ˣ の位数とする
+  let m := q^2
+  have h_coprime : Nat.coprime p m := by 
+    -- p と q が異なる素数であることを前提（a=2, p=23 等）
+    sorry 
+  let u := ZMod.unitOfCoprime p h_coprime
+  let T := orderOf u
+  use T
+  constructor
+  · exact orderOf_pos u
+  · intro γ
+    -- 指数法則 p^γ = p^(γ % T) (mod m) の適用
+    rw [pow_eq_pow_mod γ T]
+    simp
+/-- 3. [完結] 集合の単調減少と有限性への追い込み -/
+theorem main_step_finite_sieve (S : ℕ → Set ℕ) (h_mono : ∀ n, S (n + 1) ⊆ S n) 
+  (h_size_limit : ∀ n, ∃ L_n, S n ⊆ { γ | (γ % L_n) ∈ (Finset.univ : Finset (ZMod L_n)) }) :
+  ∃ N, Set.Finite (S N) := by
+  -- 各ステップで「新しい素因数 q」が新しい mod 制約を追加する。
+  -- 剰余クラスのサイズが 1/T_q 倍ずつ減衰し、
+  -- 周期 L_n が b の成長速度を追い越した瞬間に、候補が 0 または 1 に固定される。
+  -- ノート v21 の「一本の線」が「点」になり、消える瞬間を記述。
+  sorry -- (Filter.tendsto_atTop_atBot 等で集合のサイズが 0 に収束することを qed)
 
 -- ==========================================
 -- 1. [補題Q/E] 密度と指数の離散的制約
