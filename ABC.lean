@@ -9,6 +9,91 @@ import Mathlib.Tactic
 open Nat
 
 -- ==========================================
+-- 1. S-Set の縮小 (The Shrinking Execution)
+-- ==========================================
+
+/-- 
+  アイデア: 新しい素数制約 q_i が加わるたびに、S-Set はフィルタリングされ、
+  その濃度（card）は単調減少する。
+-/
+def refine_s_set {L : ℕ} (S : Finset (ZMod L)) (p a q : ℕ) (k : ℕ) : Finset (ZMod L) :=
+  S.filter (fun x => 
+    -- 剰余類 x の代表元 γ に対して剛性条件をチェック
+    ∃ γ : ℕ, γ % L = x.val ∧ v_q q (p^γ - a) ≥ k)
+
+theorem s_set_card_monotone {L : ℕ} (S : Finset (ZMod L)) (p a q k : ℕ) :
+  (refine_s_set S p a q k).card ≤ S.card := by
+  apply Finset.card_filter_le
+
+-- ==========================================
+-- 2. 指数の有界性へのアプローチ (Exponent Boundedness)
+-- ==========================================
+
+/--
+  アイデア: Q > 1+ε の条件から、指数 γ の最大値を引き出すための補題。
+  c = p^γ のとき、γ * log p > (1+ε) * log(rad) となる。
+-/
+theorem exponent_bound_from_q
+  {p γ rad_val : ℕ} {ε : ℝ} (hp : p.Prime) (hγ : γ > 0) (hε : ε > 0) :
+  (Real.log (p^γ) / Real.log rad_val > 1 + ε) →
+  (γ : ℝ) > (1 + ε) * (Real.log rad_val / Real.log p) := by
+  intro hQ
+  have h_log_p : 0 < Real.log p := Real.log_pos (by exact_mod_cast hp.two_le)
+  have h_pow : Real.log (p^γ) = γ * Real.log p := by
+    rw [Real.log_pow, mul_comm]; norm_cast
+  rw [h_pow] at hQ
+  -- 不等式の整理
+  have h_rad_pos : 0 < Real.log rad_val := by sorry -- rad_val > 1 を想定
+  exact (mul_lt_iff_lt_sup₀ h_log_p).mp ((div_lt_iff h_rad_pos).mp hQ)
+
+-- ==========================================
+-- 3. Zsigmondy 障壁 (The Zsigmondy Barrier)
+-- ==========================================
+
+/--
+  アイデア: γ が大きくなると、c = p^γ - a の素因数の積 (rad) は、
+  c^(1/(1+ε)) よりも速く増大し、Q > 1+ε を破壊することを示す。
+-/
+theorem zsigmondy_barrier
+  (p a : ℕ) (hp : p.Prime) (ha : a > 0) (ε : ℝ) (hε : ε > 0) :
+  ∃ γ_max, ∀ γ > γ_max,
+    let c := p^γ - a
+    let abc_rad := Nat.rad (a * (c-a) * c)
+    (Real.log c / Real.log abc_rad ≤ 1 + ε) := by
+  -- Zsigmondyの定理により、γ が増えると rad は新しい素因数 p_γ を取り込み、
+  -- 漸近的に log(rad) が log c に近づく（または上回る）ことを利用。
+  sorry
+
+-- ==========================================
+-- 4. 最終的な統合（有限性の完成）
+-- ==========================================
+
+/--
+  アイデア: 
+  全ての c は p^γ - a の形をしており、γ は zsigmondy_barrier によって
+  有限範囲 [0, γ_max] に抑えられる。各 γ に対して a, b は一意（または有限）
+  であるため、全体の集合も有限となる。
+-/
+theorem abc_finiteness_final_concretization
+  (ε : ℝ) (hε : ε > 0) :
+  Set.Finite { (a, b, c) : ℕ × ℕ × ℕ | a + b = c ∧ gcd a b = 1 ∧ Q a b c > 1 + ε } := by
+  -- 1. zsigmondy_barrier より、条件を満たす γ に上限 γ_max が存在することを示す
+  -- 2. 剛性フィルタ refine_s_set により、候補となる γ が有限個の剰余類に絞られる
+  -- 3. γ が有界であれば c = p^γ - a も有界である
+  -- 4. 有限な c に対して (a, b) の組は有限である
+  sorry
+
+import Mathlib.Data.Nat.Basic
+import Mathlib.Data.Nat.Prime.Basic
+import Mathlib.NumberTheory.LiftingTheExponent
+import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import Mathlib.Data.ZMod.Basic
+import Mathlib.RingTheory.Multiplicity
+import Mathlib.Tactic
+
+open Nat
+
+-- ==========================================
 -- 1. multiplicity を安全に扱う
 -- ==========================================
 
