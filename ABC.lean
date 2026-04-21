@@ -1,3 +1,26 @@
+import Mathlib.Data.Nat.GCD.Basic
+import Mathlib.Data.Int.GCD
+import Mathlib.RingTheory.Multiplicity
+import Mathlib.NumberTheory.LucasPrimality
+import Mathlib.Algebra.GeomSum
+
+-- ================================================================
+-- LTE (Lifting the Exponent Lemma)
+-- 奇素数 q, q | a-b, q ∤ a のとき
+-- v_q(a^n - b^n) = v_q(a-b) + v_q(n)
+-- ================================================================
+
+open Finset multiplicity
+
+theorem lte_odd_prime (q : ℕ) (hq : Nat.Prime q) (hq_odd : q ≠ 2)
+    (a b n : ℤ)
+    (ha : ¬ (q : ℤ) ∣ a)
+    (hab : (q : ℤ) ∣ a - b)
+    (hn : 0 < n) :
+    multiplicity (q : ℤ) (a ^ n - b ^ n) =
+    multiplicity (q : ℤ) (a - b) + multiplicity (q : ℤ) n := by
+  exact multiplicity.Finset.geom_sum_prime_pow_dvd hq (by exact_mod_cast hq_odd) ha hab hn
+
 import Mathlib.Data.Nat.Prime
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Data.Real.Basic
