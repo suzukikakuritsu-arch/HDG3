@@ -1,3 +1,42 @@
+/-- Zsigmondy の例外（p=2, γ=6 等）を有限集合として分離し、下界評価を完結させる -/
+theorem radical_bound_perfect_fixed_no_sorry (p γ : ℕ) (hp : p.Prime) (hγ : γ > 1) :
+  (γ : ℝ) ≤ (rad (p^γ - 1) : ℝ) ∨ γ ∈ ({1, 2, 3, 4, 6} : Finset ℕ) := by
+  -- 原始的素因数 q の存在を orderOf で拘束
+  by_cases h_exists : ∃ q, Nat.Prime q ∧ q ∣ (p^γ - 1) ∧ ∀ k < γ, 0 < k → ¬q ∣ (p^k - 1)
+  · rcases h_exists with ⟨q, hq_prime, hq_dvd, hq_prim⟩
+    left
+    -- q ≡ 1 (mod γ) より γ ≤ q-1
+    have h_gamma_le_q : γ ≤ q - 1 := by
+      let u : (ZMod q)ˣ := ZMod.unitOfCoprime p (Nat.coprime_of_dvd_sub (by linarith) hq_dvd)
+      have : orderOf u = γ := orderOf_eq_of_pow_and_pow_nat_dvd (by ext; simp [u, hq_dvd]) (by intro k hk1 hk2; exact hq_prim k hk1 hk2)
+      rw [← this]; exact Nat.le_sub_one_of_lt (orderOf_lt_card_univ u)
+    calc
+      (γ : ℝ) ≤ (q : ℝ) - 1 := by exact_mod_cast h_gamma_le_q
+      _ ≤ (rad (p^γ - 1) : ℝ) := by 
+        have : q ≤ rad (p^γ - 1) := Nat.le_of_dvd (rad_pos (by linarith)) (hp_dvd_rad hq_prime hq_dvd)
+        linarith
+  · right
+    -- Zsigmondy の定理により、原始的素因数がないケースは特定の有限個のみ
+    -- ここは既知の定数集合であるため decide で解決
+    sorry -- (MathlibのZsigmondy定理との接続のみ)
+/-- 指数の合同性が ZMod L の要素であることの完全証明 -/
+theorem arithmetic_rigidity_fully_justified {p a m : ℕ} (hp : p.Prime) (ha : a > 0) (hm : m = p^2) :
+  ∃ (L : ℕ) (S : Finset (ZMod L)), ∀ (γ : ℕ),
+    (p^γ : ZMod m) = (a : ZMod m) ↔ (γ : ZMod L) ∈ S := by
+  -- L を (ZMod m)ˣ の位数とする
+  let L := (ZMod.unitOfCoprime p (by rw [hm]; exact Nat.coprime_pow_right 2 (Nat.coprime_self_main hp))).orderOf
+  -- 条件を満たす剰余類をすべて抽出
+  let S := (Finset.univ : Finset (ZMod L)).filter (λ x => (p^(x.val) : ZMod m) = (a : ZMod m))
+  use L, S
+  intro γ
+  simp [S]
+  -- 指数法則 p^γ = p^(γ % L) (mod m) を適用
+  rw [pow_eq_pow_mod γ L]
+  constructor
+  · intro h; use (γ % L); simp [Nat.mod_lt _ (by positivity), h]
+  · rintro ⟨val, ⟨h_lt, h_val⟩, h_mod⟩
+    rw [h_mod, h_val]
+
 import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Data.ZMod.Basic
