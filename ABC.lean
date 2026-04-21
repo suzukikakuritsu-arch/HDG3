@@ -1,9 +1,56 @@
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Nat.GCD.Basic
 import Mathlib.Data.Nat.Prime.Basic
+
+-- ================================================================
+-- 補題1：a + b = c, gcd(a,b)=1, p|c, p∤a → p∤b
+-- ================================================================
+
+theorem coprime_sum_prime_not_dvd
+    (a b c p : ℕ)
+    (hsum : a + b = c)
+    (hcop : Nat.Coprime a b)
+    (hp   : Nat.Prime p)
+    (hpc  : p ∣ c)
+    (hpa  : ¬ p ∣ a) :
+    ¬ p ∣ b := by
+  intro hpb
+  have hpab : p ∣ a + b := hsum ▸ hpc
+  have hpa' : p ∣ a := by
+    have h1 : p ∣ a + b - b := Nat.dvd_sub' hpab hpb
+    simp at h1
+    exact h1
+  exact hpa hpa'
+
+-- ================================================================
+-- 数値検証：2 + 3^10 * 109 = 23^5
+-- ================================================================
+
+theorem reyssat_numerical :
+    2 + 3^10 * 109 = 23^5 := by norm_num
+
+import Mathlib.Data.Nat.Basic
+import Mathlib.Data.Nat.GCD.Basic
+import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Data.Nat.Defs
 import Mathlib.NumberTheory.LiftingTheExponent
 import Mathlib.RingTheory.Multiplicity
+
+-- 整数版（より安全）
+theorem coprime_sum_prime_not_dvd_int
+    (a b c p : ℤ)
+    (hsum : a + b = c)
+    (hcop : IsCoprime a b)
+    (hp   : Prime p)
+    (hpc  : p ∣ c)
+    (hpa  : ¬ p ∣ a) :
+    ¬ p ∣ b := by
+  intro hpb
+  have hpab : p ∣ a + b := hsum ▸ hpc
+  have hpa' : p ∣ a := by
+    have := dvd_add_right hpb
+    exact this.mp hpab
+  exact hpa hpa'
 
 -- ================================================================
 -- 補題1：a + b = c, gcd(a,b)=1, p|c, p∤a → p∤b
