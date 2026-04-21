@@ -1,5 +1,88 @@
 import Mathlib.Data.Nat.Basic
 import Mathlib.Data.Nat.Prime.Basic
+import Mathlib.Analysis.SpecialFunctions.Log.Basic
+import Mathlib.Tactic
+import Mathlib.Topology.Algebra.Order
+
+open Nat Filter
+
+-- ==========================================
+-- 1. log 不等式（安定版）
+-- ==========================================
+
+theorem exponent_bound_from_q_fixed
+  {p γ rad_val : ℕ} {ε : ℝ}
+  (hp : p.Prime) (hγ : γ > 0) (hε : ε > 0)
+  (hrad : 1 < rad_val) :
+  (Real.log (p^γ) / Real.log rad_val > 1 + ε) →
+  (γ : ℝ) > (1 + ε) * (Real.log rad_val / Real.log p) := by
+  intro hQ
+
+  have h_log_p : 0 < Real.log p :=
+    Real.log_pos (by exact_mod_cast hp.two_le)
+
+  have h_log_rad : 0 < Real.log rad_val :=
+    Real.log_pos (by exact_mod_cast hrad)
+
+  -- log(p^γ)
+  have h_pow : Real.log (p^γ) = (γ : ℝ) * Real.log p := by
+    have hp_pos : 0 < (p : ℝ) := by exact_mod_cast hp.pos
+    simpa using Real.log_pow hp_pos γ
+
+  rw [h_pow] at hQ
+
+  -- γ * log p > (1+ε) log rad
+  have h1 :
+    (γ : ℝ) * Real.log p >
+    (1 + ε) * Real.log rad_val :=
+    (div_lt_iff h_log_rad).mp hQ
+
+  -- 両辺を log p で割る（安全版）
+  have := (div_lt_iff h_log_p).mpr h1
+
+  -- 整形
+  simpa [mul_comm, mul_left_comm, mul_assoc] using this
+
+-- ==========================================
+-- 2. 補助：rad の基本下界
+-- ==========================================
+
+lemma rad_ge_one (n : ℕ) : Nat.rad n ≥ 1 := by
+  have := Nat.rad_le n
+  exact Nat.succ_le_of_lt (Nat.pos_of_gt (Nat.lt_of_le_of_lt this (Nat.lt_succ_self _)))
+
+lemma rad_pos (n : ℕ) (h : n ≠ 0) : 0 < (Nat.rad n : ℝ) := by
+  have : Nat.rad n ≥ 1 := by
+    have := Nat.rad_le n
+    exact Nat.succ_le_of_lt (Nat.pos_of_gt (Nat.lt_of_le_of_lt this (Nat.lt_succ_self _)))
+  exact_mod_cast lt_of_lt_of_le (by decide : (0 : ℕ) < 1) this
+
+-- ==========================================
+-- 3. 衝突の弱形式（埋められる部分だけ）
+-- ==========================================
+
+/--
+「大きいときに壊れる」ことの弱いバージョン：
+rad ≥ 2 を使って log の分母を下から押さえる
+-/
+lemma log_ratio_upper_bound_weak
+  (p γ : ℕ) (hp : p.Prime) (hγ : γ ≥ 1) :
+  let c := p^γ
+  let r := Nat.rad c
+  Real.log c / Real.log r ≤ Real.log c / Real.log 2 := by
+  intro c r
+  have h2 : (2 : ℝ) ≤ r := by
+    -- p が素数なので rad(c) = p
+    have : Nat.rad c = p := by
+      -- p^γ の場合 rad = p
+      sorry
+    simp [this, hp.two_le]
+  have hlog : Real.log (2 : ℝ) ≤ Real.log r :=
+    Real.log_le_log (by decide) (by exact_mod_cast h2)
+  have hpos : 0 < Real.log r :=
+    Real.log_pos (by exact_mod_cast (lt_of_lt_of_le (by
+import Mathlib.Data.Nat.Basic
+import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.NumberTheory.LiftingTheExponent
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Data.ZMod.Basic
